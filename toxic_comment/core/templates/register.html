@@ -1,0 +1,21 @@
+{% extends 'basesign.html' %}
+{% load static %}
+{% block title %}Create an Account{% endblock %}
+{% block content %}
+        <p>Create an Account</p>
+        <form method="post">
+            {% csrf_token %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div>{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+            <input type="text" name="username" placeholder="Please Enter Username" required>
+            <input type="email" name="email" placeholder="Enter Email" required>
+            <input type="password" name="password1" placeholder="Enter Password" required>
+
+            <button type="submit">Registration</button>
+        </form>
+        <span style="font-size: 13px;">Already have an account?<a href="{% url 'login' %}" style="text-decoration: none; color: #0b0433;"> login here</a></span>
+
+{% endblock %}

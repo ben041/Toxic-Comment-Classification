@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Word-by-Word Analysis{% endblock %}
+{% block content %}
+
+
+ <!-- Registration -->
+ <div id="registration" class="form-1 bg-dark-blue">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-6">
+                <h1>About Us</h1>
+                <p>
+                    At the heart of our work lies a simple yet profound belief: the internet 
+                    should be a space where everyone feels welcome. Our Toxic Comment Detection 
+                    system is designed to combat online toxicity, empowering users to identify harmful 
+                    language and fostering healthier digital interactions. We blend the latest advancements 
+                    in natural language processing with a commitment to inclusivity and positivity.
+                </p>
+                <form method="post" action="{% url 'word_by_word' %}">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="exampleFormControlTextarea1" class="form-label">Enter Comment</label>
+                        <textarea class="form-control" name="comment" id="exampleFormControlTextarea1" rows="3"></textarea>
+                    </div>
+                    <button type="submit" class="form-control-submit-button">Classify</button>
+                </form>
+                
+            </div>
+
+            <div class="col-lg-6">
+                <div class="text-container text-light">
+                    {% if word_analysis %}
+                    <h2>Word-by-Word Analysis:</h2>
+                    <p><strong>Comment:</strong> <em>"{{ analyzed_comment }}"</em></p>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th><p>Word</p></th>
+                                <th><p>Sentiment</p></th>
+                                <th><p>Confidence Score</p></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for analysis in word_analysis %}
+                            <tr>
+                                <td><p>{{ analysis.word }}</p></td>
+                                <td>
+                                    <p>
+                                        {% if analysis.label == 'toxic' %}
+                                            <span class="badge badge-danger">Toxic</span>
+                                        {% else %}
+                                            <span class="badge badge-success">Non-Toxic</span>
+                                        {% endif %}
+                                    </p>
+                                </td>
+                                <td><p>{{ analysis.score|floatformat:2 }}%</p></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    
+                        <h2> Word-by-Word Analysis (Overview:)</h2>
+                        <p>
+                            Word-by-word analysis is a granular approach to understanding the sentiment 
+                            or toxicity of a text by evaluating each word individually. This method 
+                            breaks down a user-provided text into its components and classifies each 
+                            word based on predefined categories such as positive, negative, neutral, 
+                            or toxic.
+                        </p>
+                        <ul class="list-unstyled li-space-lg">
+                            <h5>How It Works:</h5>
+                            <li class="media">
+                                <i class="fas fa-square"></i><div class="media-body">
+                                    The text is tokenized into individual words.
+                                </div>
+                            </li>
+                            <li class="media">
+                                <i class="fas fa-square"></i><div class="media-body">
+                                    Each word is matched against a trained model or dictionary to 
+                                    determine its sentiment or toxicity score.
+                                </div>
+                            </li>
+                            <li class="media">
+                                <i class="fas fa-square"></i><div class="media-body">
+                                    Words are flagged as potentially harmful or safe based on their 
+                                    context or predefined labels.
+                                </div>
+                            </li>
+                        </ul>
+                    {% endif %}
+                    
+                </div> <!-- end of text-container -->
+            </div> <!-- end of col -->
+            
+        </div> <!-- end of row -->
+    </div> <!-- end of container -->
+</div> <!-- end of form-1 -->
+<!-- end of registration -->
+   
+
+    
+{% endblock %}

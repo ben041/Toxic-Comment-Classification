@@ -1,0 +1,18 @@
+{% extends 'basesign.html' %}
+{% load static %}
+{% block title %}Login{% endblock %}
+{% block content %}
+        <div id="message" class="login-message">Login your Account</div>
+        <form method="post">
+            {% csrf_token %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div style="color: red;">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+            <input type="text" name="username" placeholder="Username" required>
+            <input type="password" name="password" placeholder="Password" required>
+            <button type="submit">Login</button>
+        </form>
+        <span style="font-size: 13px;">Don't have an account?<a href="{% url 'register' %}" style="text-decoration: none; color: #0b0433;"> register here</a></span>
+{% endblock %}
