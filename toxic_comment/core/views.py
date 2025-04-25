@@ -55,34 +55,58 @@ from django.contrib import messages
 # Register View
 def register_view(request):
     if request.method == 'POST':
-        username = request.POST.get('username')  # Get username from form
-        email = request.POST.get('email')  # Get email from form
-        password = request.POST.get('password')  # Get password from form
+        username = request.POST.get('username')
+        email = request.POST.get('email')
+        password = request.POST.get('password1')  # Changed to match template's password1 field
         
+        # Add validation for empty fields
+        if not (username and email and password):
+            messages.error(request, "All fields are required!")
+            return render(request, 'register.html')
+            
         # Check if the username or email is already in use
         if User.objects.filter(username=username).exists():
             messages.error(request, "Username already exists!")
         elif User.objects.filter(email=email).exists():
             messages.error(request, "Email already registered!")
         else:
-            # Create a new user
-            user = User.objects.create_user(username=username, email=email, password=password)
-            messages.success(request, "Account created successfully!")
-            return redirect('landing_page')  # Redirect to home page
-
+            try:
+                # Create a new user with cleaned data
+                user = User.objects.create_user(
+                    username=username.strip(),
+                    email=email.strip(),
+                    password=password
+                )
+                messages.success(request, "Account created successfully!")
+                # Log the user in immediately after registration
+                login(request, user)
+                return redirect('landing_page')
+            except Exception as e:
+                messages.error(request, "An error occurred during registration.")
+                
     return render(request, 'register.html')
 
-# Login View
 def login_view(request):
     if request.method == 'POST':
         username = request.POST.get('username')
         password = request.POST.get('password')
+        
+        # Add validation for empty fields
+        if not (username and password):
+            messages.error(request, "Both username and password are required!")
+            return render(request, 'login.html')
+            
+        # Clean the username input
+        username = username.strip()
+        
         user = authenticate(request, username=username, password=password)
-        if user:
+        if user is not None:
             login(request, user)
-            return redirect('landing_page')  # Redirect to homepage or dashboard
+            messages.success(request, "Login successful!")
+            return redirect('landing_page')
         else:
-            messages.error(request, "Invalid email or password!")
+            messages.error(request, "Invalid username or password!")
+            
     return render(request, 'login.html')
 
 # Logout View
