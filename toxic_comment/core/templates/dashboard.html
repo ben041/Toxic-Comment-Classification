@@ -1,53 +1,108 @@
 {% extends 'base.html' %}
 {% load static %}
-{% block title %}Welcome{% endblock %}
+{% block title %}Dashboard{% endblock %}
 {% block content %}
 
-    <!-- Header -->
-    <header id="header" class="header">
-        <div class="container">
-            <div class="row">
-                <div class="col-lg-12">
+<div class="container mt-5">
+    <div class="row">
+        <!-- Statistics Cards -->
+        <div class="col-md-3">
+            <div class="card bg-dark-blue text-white">
+                <div class="card-body">
+                    <h5>Total Analyses</h5>
+                    <h2>{{ stats.total_analyses }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-dark-blue text-white">
+                <div class="card-body">
+                    <h5>Average Toxicity</h5>
+                    <h2>{{ stats.avg_toxicity|floatformat:2 }}%</h2>
+                </div>
+            </div>
+        </div>
+        <!-- Add more stat cards -->
+    </div>
 
-                    
-                                            <div class="text-container text-center">
-                                                        <h1>Let's Make the Internet a Kinder Place!</h1>
-                                                        <p>
-                                                            We’ve all been there — scrolling through comments and 
-                                                            stumbling upon something nasty or offensive. It’s time 
-                                                            to change that! Our Toxic Comment Detector is here to
-                                                             identify toxic language and help build a safer online 
-                                                             space for everyone.
-                                                        </p>
-                                                        <div class="resource-container basic-4 bg-dark-blue">
-                                                            <!-- <img class="img-fluid" src="images/resources-1.jpg" alt="alternative"> -->
-                                                            <div class="text-container">
-                                                                <h3>Why We Built This Tool:</h3>
-                                                        <p>
-                                                            The internet should be a place for collaboration, learning, 
-                                                            and positivity. By identifying harmful comments, we’re taking 
-                                                            one small step toward a kinder, more inclusive online experience. 
-                                                            Let’s work together to make the digital world a better place!                                                        
-                                                        </p>
-                                                            </div> <!-- end of text-container -->
-                                                        </div>
-                                                        
-                                                    
-                                            </div> 
-                                            
-                            
+    <!-- Trend Chart -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card bg-dark-blue text-white">
+                <div class="card-body">
+                    <h5>Weekly Toxicity Trend</h5>
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
 
-                        </div> <!-- end of swiper-container -->
-                    </div> <!-- end of slider-container -->
-                    <!-- end of text slider -->
+    <!-- Recent Analyses -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card bg-dark-blue text-white">
+                <div class="card-body">
+                    <h5>Recent Analyses</h5>
+                    <div class="table-responsive">
+                        <table class="table table-dark">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Text</th>
+                                    <th>Score</th>
+                                    <th>Result</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for analysis in recent_analyses %}
+                                <tr>
+                                    <td>{{ analysis.created_at|date:"M d, Y" }}</td>
+                                    <td>{{ analysis.text|truncatechars:50 }}</td>
+                                    <td>{{ analysis.toxicity_score|floatformat:2 }}%</td>
+                                    <td>
+                                        {% if analysis.is_toxic %}
+                                        <span class="badge badge-danger">Toxic</span>
+                                        {% else %}
+                                        <span class="badge badge-success">Clean</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-                </div> <!-- end of col -->
-            </div> <!-- end of row -->
-            
-        </div> <!-- end of container -->
-    </header> <!-- end of header -->
-    <!-- end of header -->
+<!-- Chart.js initialization -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const weeklyData = {{ weekly_data|safe }};
+    const ctx = document.getElementById('trendChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: weeklyData.map(d => d.day),
+            datasets: [{
+                label: 'Average Toxicity Score',
+                data: weeklyData.map(d => d.avg_score * 100),
+                borderColor: '#3dcac8',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            }
+        }
+    });
+</script>
 
-
-    
 {% endblock %}

@@ -1,9 +1,12 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from transformers import AutoModelForSequenceClassification, AutoTokenizer, TextClassificationPipeline
 from .forms import ToxicCommentForm
 from django.http import JsonResponse
 import json
 from django.views.decorators.csrf import csrf_protect
+from django.contrib.auth.decorators import login_required
+from .models import AnalysisHistory
+from django.db.models import Avg
 
 # Load the model and tokenizer
 MODEL_PATH = "core/models"
@@ -50,7 +53,6 @@ def about(request):
     return render(request, 'about.html')
 
 
-from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.contrib import messages
@@ -121,6 +123,33 @@ def logout_view(request):
 def realtime_view(request):
     return render(request, 'realtime.html')
 
+@login_required
+def dashboard_view(request):
+    # Get user's analysis history
+    history = AnalysisHistory.objects.filter(user=request.user)
+    
+    # Calculate statistics
+    stats = {
+        'total_analyses': history.count(),
+        'avg_toxicity': history.aggregate(Avg('toxicity_score')),
+        'toxic_count': history.filter(is_toxic=True).count(),
+        'clean_count': history.filter(is_toxic=False).count(),
+    }
+    
+    # Get weekly trend data
+    weekly_data = history.extra(
+        select={'day': 'date(created_at)'},
+    ).values('day').annotate(
+        avg_score=Avg('toxicity_score')
+    ).order_by('day')
+
+    return render(request, 'dashboard.html', {
+        'stats': stats,
+        'weekly_data': json.dumps(list(weekly_data)),
+        'recent_analyses': history[:10]
+    })
+
+# Modify existing analyze_text view to save history
 @csrf_protect
 def analyze_text(request):
     if request.method == 'POST':
@@ -129,6 +158,15 @@ def analyze_text(request):
         
         # Analyze full text
         result = pipeline(text)
+        
+        # Save analysis history if user is logged in
+        if request.user.is_authenticated:
+            AnalysisHistory.objects.create(
+                user=request.user,
+                text=text,
+                toxicity_score=result[0]['score'],
+                is_toxic=result[0]['label'] == 'toxic'
+            )
         
         # Analyze individual words
         words = []
