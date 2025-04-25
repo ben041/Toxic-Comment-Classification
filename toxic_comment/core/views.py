@@ -1,6 +1,9 @@
 from django.shortcuts import render
 from transformers import AutoModelForSequenceClassification, AutoTokenizer, TextClassificationPipeline
 from .forms import ToxicCommentForm
+from django.http import JsonResponse
+import json
+from django.views.decorators.csrf import csrf_protect
 
 # Load the model and tokenizer
 MODEL_PATH = "core/models"
@@ -114,5 +117,35 @@ def logout_view(request):
     logout(request)
     messages.success(request, "You have been logged out.")
     return redirect('login')
+
+def realtime_view(request):
+    return render(request, 'realtime.html')
+
+@csrf_protect
+def analyze_text(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        text = data.get('text', '')
+        
+        # Analyze full text
+        result = pipeline(text)
+        
+        # Analyze individual words
+        words = []
+        for word in text.split():
+            word_result = pipeline(word)
+            words.append({
+                'text': word,
+                'toxic': word_result[0]['label'] == 'toxic',
+                'score': word_result[0]['score']
+            })
+            
+        return JsonResponse({
+            'label': result[0]['label'],
+            'score': result[0]['score'],
+            'words': words
+        })
+        
+    return JsonResponse({'error': 'Invalid request'}, status=400)
 
 

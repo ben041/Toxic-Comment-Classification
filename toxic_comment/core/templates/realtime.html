@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Real-Time Analysis{% endblock %}
+{% block content %}
+
+<div id="registration" class="form-1 bg-dark-blue">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-6">
+                <h1>Real-Time Toxicity Analysis</h1>
+                <p>
+                    See instant feedback as you type. Our real-time analyzer helps you understand 
+                    the toxicity level of your text immediately, with visual indicators and 
+                    word-level analysis.
+                </p>
+                <div class="form-group">
+                    <label for="realtimeInput" class="form-label">Start typing to analyze</label>
+                    <textarea class="form-control" id="realtimeInput" rows="4" 
+                            placeholder="Type your text here..."></textarea>
+                </div>
+
+                <div class="mt-3">
+                    <div class="progress" style="height: 25px;">
+                        <div id="toxicityMeter" class="progress-bar" role="progressbar" 
+                             style="width: 0%;" aria-valuenow="0" aria-valuemin="0" 
+                             aria-valuemax="100">0%</div>
+                    </div>
+                    <p class="mt-2" id="analysisLabel">Toxicity Level: Neutral</p>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="text-container text-light">
+                    <h2>Word Analysis</h2>
+                    <div id="wordAnalysis" class="p-3" style="min-height: 200px; 
+                         background: rgba(255,255,255,0.1); border-radius: 8px;">
+                        <p class="text-center">Words will appear here as you type...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let typingTimer;
+const doneTypingInterval = 500;
+
+document.getElementById('realtimeInput').addEventListener('keyup', function() {
+    clearTimeout(typingTimer);
+    if (this.value) {
+        typingTimer = setTimeout(analyzeText, doneTypingInterval);
+    }
+});
+
+function analyzeText() {
+    const text = document.getElementById('realtimeInput').value;
+    if (!text) return;
+
+    fetch('/analyze_text/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({text: text})
+    })
+    .then(response => response.json())
+    .then(data => {
+        updateVisualizations(data);
+    });
+}
+
+function updateVisualizations(data) {
+    // Update toxicity meter
+    const meter = document.getElementById('toxicityMeter');
+    const score = Math.round(data.score * 100);
+    meter.style.width = `${score}%`;
+    meter.textContent = `${score}%`;
+    
+    // Update color based on score
+    if (score < 30) {
+        meter.className = 'progress-bar bg-success';
+    } else if (score < 70) {
+        meter.className = 'progress-bar bg-warning';
+    } else {
+        meter.className = 'progress-bar bg-danger';
+    }
+
+    // Update label
+    document.getElementById('analysisLabel').textContent = 
+        `Toxicity Level: ${data.label} (${score}% confidence)`;
+
+    // Update word analysis
+    const wordAnalysis = document.getElementById('wordAnalysis');
+    wordAnalysis.innerHTML = data.words.map(word => 
+        `<span class="badge ${word.toxic ? 'badge-danger' : 'badge-success'} m-1">
+            ${word.text}
+        </span>`
+    ).join(' ');
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}
